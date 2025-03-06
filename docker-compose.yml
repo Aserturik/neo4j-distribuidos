@@ -1,0 +1,16 @@
+services:
+  db-uptc:
+    image: neo4j:latest
+    environment:
+      - NEO4J_DBMS_MEMORY_PAGECACHE_SIZE=128M
+      - NEO4J_AUTH=CASILA/ViVaLaUpTc
+    ports:
+      - "6969:6969"
+    volumes:
+      - ./neo4j_data:/data
+    networks:
+      - uptc_l
+
+networks:
+  uptc_l:
+    driver: bridge
