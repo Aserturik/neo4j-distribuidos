@@ -10,6 +10,7 @@ services:
       - "4040:7687"  
     volumes:
       - neo4j_data:/data
+      - ./csv:/var/lib/neo4j/import
     networks:
       - app_network
 
