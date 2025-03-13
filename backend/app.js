@@ -11,24 +11,76 @@ const driver = neo4j.driver(
   neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
 );
 
-// API Endpoint to Get Movies
-app.get("/movies", async (req, res) => {
+// API Endpoint to Get lenguajes
+app.get("/api/extract", async (req, res) => {
   const session = driver.session();
+
+  // Función para convertir un string a camelCase
+  const toCamelCase = (str) => {
+    return str
+      .toLowerCase()
+      .split(" ")
+      .map((word, index) => {
+        return index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join("");
+  };
+
   try {
+    // Consulta para obtener los nodos de Lenguaje
     const result = await session.run(`
-      MATCH (m:Movie)<-[:ACTED_IN]-(a:Person)
-      RETURN m.title AS title, collect(a.name) AS actors
+      MATCH (l:Lenguaje)
+      RETURN 
+        l.id AS id, 
+        l.nombre AS nombre, 
+        l.popularidad AS popularidad, 
+        l.velocidad AS velocidad, 
+        l.paradigma AS paradigma, 
+        l.año_creacion AS año_creacion
     `);
 
-    const movies = result.records.map((record) => ({
-      Película: record.get("title"),
-      Actores: record.get("actors"),
-    }));
+    const lenguajes = result.records.map(record => {
+      // Obtenemos cada propiedad del registro
+      const id = record.get("id");
+      const nombre = record.get("nombre");
+      const popularidad = record.get("popularidad");
+      const velocidad = record.get("velocidad");
+      const paradigma = record.get("paradigma");
+      const año_creacion = record.get("año_creacion");
+
+      // Convertir el nombre a camelCase
+      const nombreCamel = toCamelCase(nombre);
+
+      // Clasificar la popularidad
+      const clasificacionPopularidad = popularidad < 30 
+        ? "Poco Usado" 
+        : (popularidad <= 70 ? "Moderado" : "Muy Popular");
+
+      // Clasificar la velocidad
+      const clasificacionVelocidad = velocidad < 40 
+        ? "Lento" 
+        : (velocidad <= 70 ? "Rápido" : "Muy Rápido");
+
+      // Calcular el índice de eficiencia
+      const eficiencia = (popularidad + velocidad) / 2;
+
+      return {
+        id,
+        nombre: nombreCamel,
+        popularidad,
+        clasificacionPopularidad,
+        velocidad,
+        clasificacionVelocidad,
+        paradigma,
+        año_creacion,
+        eficiencia
+      };
+    });
 
     res.json({
       success: true,
-      count: movies.length,
-      data: movies,
+      count: lenguajes.length,
+      data: lenguajes,
     });
   } catch (error) {
     res.status(500).json({
@@ -39,7 +91,6 @@ app.get("/movies", async (req, res) => {
     await session.close();
   }
 });
-
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
