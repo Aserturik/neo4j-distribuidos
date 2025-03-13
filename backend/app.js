@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const neo4j = require("neo4j-driver");
-
+const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.EXPRESS_PORT || 3000;
 
@@ -40,7 +40,7 @@ app.post('/api/create-table', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
-    });
+jj   });
   }
 });
 
