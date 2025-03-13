@@ -6,11 +6,26 @@ services:
     environment:
       - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
     ports:
-      - "6969:7474"  
-      - "4040:7687"  
+      - "6969:7474"
+      - "4040:7687"
     volumes:
       - neo4j_data:/data
       - ./csv:/var/lib/neo4j/import
+    networks:
+      - app_network
+
+  postgres:
+    image: postgres:13
+    container_name: postgres_etl
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: etl_data
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     networks:
       - app_network
 
@@ -20,8 +35,9 @@ services:
     restart: always
     depends_on:
       - neo4j
+      - postgres
     env_file:
-      - .env  # Load all environment variables from .env file
+      - .env  # Carga las variables de entorno desde el archivo .env
     networks:
       - app_network
     ports:
@@ -29,6 +45,7 @@ services:
 
 volumes:
   neo4j_data:
+  pgdata:
 
 networks:
   app_network:
