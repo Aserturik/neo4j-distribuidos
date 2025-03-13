@@ -1,8 +1,8 @@
 paso 1
 
 ### copiar el dataset a la carpeta csv
-mkdir csv
-cp -r Dataset-Programacion.csv csv/
+
+docker-compose up --build -d
 
 docker exec -it alex-database-neo4j cypher-shell -u neo4j -p 12345678
 
