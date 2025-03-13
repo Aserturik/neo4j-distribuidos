@@ -18,3 +18,5 @@ LOAD CSV WITH HEADERS FROM 'file:///Dataset-Programacion.csv'
              });
 
 curl -X POST http://localhost:3000/api/create-table
+curl -X POST http://localhost:3000/api/extract-and-load
+curl -X POST http://localhost:3000/api/extract-and-load
