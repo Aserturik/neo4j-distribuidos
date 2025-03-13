@@ -11,6 +11,55 @@ const driver = neo4j.driver(
   neo4j.auth.basic(process.env.NEO4J_USER, process.env.NEO4J_PASSWORD),
 );
 
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgres://myuser:mypassword@postgres:5432/etl_data'
+});
+
+// Endpoint para crear la tabla etl_data
+app.post('/api/create-table', async (req, res) => {
+  try {
+    const createTableQuery = `
+      CREATE TABLE IF NOT EXISTS etl_data (
+        id TEXT PRIMARY KEY,
+        nombre TEXT,
+        popularidad INTEGER,
+        clasificacion_popularidad TEXT,
+        velocidad INTEGER,
+        clasificacion_velocidad TEXT,
+        paradigma TEXT,
+        año_creacion INTEGER,
+        eficiencia NUMERIC
+      );
+    `;
+    await pool.query(createTableQuery);
+    res.status(200).json({
+      success: true,
+      message: 'Tabla etl_data creada exitosamente.'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Ejemplo de endpoint para probar la conexión a la base de datos
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // API Endpoint to Get lenguajes
 app.get("/api/extract", async (req, res) => {
   const session = driver.session();
