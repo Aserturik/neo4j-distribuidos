@@ -4,7 +4,7 @@ const neo4j = require("neo4j-driver");
 const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.EXPRESS_PORT || 3000;
-
+const fs = require('fs');
 // Connect to Neo4j with environment variables
 const driver = neo4j.driver(
   process.env.NEO4J_URI,
