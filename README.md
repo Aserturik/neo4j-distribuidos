@@ -17,4 +17,4 @@ LOAD CSV WITH HEADERS FROM 'file:///Dataset-Programacion.csv'
                  año_creacion: toInteger(row.año_creacion)
              });
 
-
+curl -X POST http://localhost:3000/api/create-table
