@@ -44,6 +44,55 @@ app.post('/api/create-table', async (req, res) => {
   }
 });
 
+
+app.post('/api/extract-and-load', async (req, res) => {
+  try {
+    // Endpoint externo que devuelve la información en JSON
+    const externalEndpoint = 'http://backend:3000/api/extract'; // Reemplaza con el correcto
+
+    // Obtener datos desde el endpoint
+    const response = await fetch(externalEndpoint);
+    const jsonData = await response.json();
+
+    if (!jsonData.success) {
+      throw new Error('Error obteniendo datos del endpoint externo');
+    }
+
+    // Preparar datos para inserción
+    const insertQuery = `
+      INSERT INTO etl_data (id, nombre, popularidad, clasificacion_popularidad, 
+                            velocidad, clasificacion_velocidad, paradigma, año_creacion, eficiencia)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    for (const item of jsonData.data) {
+      await pool.query(insertQuery, [
+        item.id,
+        item.nombre,
+        item.popularidad,
+        item.clasificacionPopularidad,
+        item.velocidad,
+        item.clasificacionVelocidad,
+        item.paradigma,
+        item.año_creacion,
+        item.eficiencia
+      ]);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Datos insertados correctamente (${jsonData.data.length} registros)`
+    });
+  } catch (error) {
+    console.error('Error en ETL:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Ejemplo de endpoint para probar la conexión a la base de datos
 app.get('/api/test-db', async (req, res) => {
   try {
