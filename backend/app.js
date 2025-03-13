@@ -93,6 +93,33 @@ app.post('/api/extract-and-load', async (req, res) => {
   }
 });
 
+// Endpoint para exportar la data a un CSV y enviarlo como descarga
+app.get('/api/export-csv', async (req, res) => {
+  try {
+    // Definir la ruta donde se creará el CSV en el contenedor
+    const filePath = '/var/lib/postgresql/data/etl_data.csv';
+
+    // Ejecutar el comando COPY para generar el CSV
+    await pool.query(`
+      COPY etl_data TO '${filePath}' WITH CSV HEADER;
+    `);
+
+    // Leer el archivo CSV y enviarlo como descarga
+    fs.readFile(filePath, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error leyendo el archivo CSV:', err);
+        return res.status(500).send('Error leyendo el archivo CSV');
+      }
+      res.setHeader('Content-Disposition', 'attachment; filename=etl_data.csv');
+      res.setHeader('Content-Type', 'text/csv');
+      res.send(data);
+    });
+  } catch (error) {
+    console.error('Error exportando CSV:', error);
+    res.status(500).send(error.message);
+  }
+});
+
 // Ejemplo de endpoint para probar la conexión a la base de datos
 app.get('/api/test-db', async (req, res) => {
   try {
