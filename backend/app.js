@@ -20,9 +20,7 @@ app.get("/api/extract", async (req, res) => {
     return str
       .toLowerCase()
       .split(" ")
-      .map((word, index) => {
-        return index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1);
-      })
+      .map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1))
       .join("");
   };
 
@@ -40,13 +38,13 @@ app.get("/api/extract", async (req, res) => {
     `);
 
     const lenguajes = result.records.map(record => {
-      // Obtenemos cada propiedad del registro
       const id = record.get("id");
       const nombre = record.get("nombre");
-      const popularidad = record.get("popularidad");
-      const velocidad = record.get("velocidad");
-      const paradigma = record.get("paradigma");
-      const año_creacion = record.get("año_creacion");
+
+      // Convertir valores BigInt a Number para evitar errores de tipo
+      const popularidad = Number(record.get("popularidad"));
+      const velocidad = Number(record.get("velocidad"));
+      const año_creacion = Number(record.get("año_creacion"));
 
       // Convertir el nombre a camelCase
       const nombreCamel = toCamelCase(nombre);
@@ -71,7 +69,7 @@ app.get("/api/extract", async (req, res) => {
         clasificacionPopularidad,
         velocidad,
         clasificacionVelocidad,
-        paradigma,
+        paradigma: record.get("paradigma"),
         año_creacion,
         eficiencia
       };
@@ -91,6 +89,7 @@ app.get("/api/extract", async (req, res) => {
     await session.close();
   }
 });
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
