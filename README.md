@@ -1,89 +1,139 @@
-# Proyecto ETL: Neo4j, Express y PostgreSQL
 
-Este proyecto implementa un proceso ETL que extrae datos de Neo4j, los transforma y los carga en una base de datos PostgreSQL. Además, permite exportar los datos cargados a un archivo CSV.
+## ✅ 1️⃣ Antes de comenzar
 
-## Requisitos
+📍 Colocar el archivo `languages.tsv` en:
 
-- Docker y Docker Compose instalados en tu máquina.
-- Archivo de dataset: `Dataset-Programacion.csv`.
-- La carpeta `csv` debe existir en la raíz del proyecto y contener el dataset.
-
-## Estructura de Contenedores
-
-El archivo `docker-compose.yml` levanta tres servicios:
-- **Neo4j:** Para almacenar y consultar los datos originales.
-- **PostgreSQL:** Para la persistencia de los datos transformados.
-- **Backend (Express):** Para orquestar el proceso ETL y exponer los endpoints.
-
-## Pasos para Ejecutar el Proceso ETL
-
-### 1. Preparar el Dataset
-
-Copia el archivo `Dataset-Programacion.csv` a la carpeta `csv` del proyecto.
-
-### 2. Levantar los Contenedores
-
-Desde la raíz del proyecto, ejecuta:
-
-```bash
-docker-compose up --build -d
+```
+Neo4j/import/languages.tsv
 ```
 
-Esto construirá y levantará los servicios definidos en el `docker-compose.yml`.
+Formato: **TSV** con columnas seleccionadas:
 
-### 3. Cargar Datos en Neo4j
+| name | first_release | paradigms | types |
 
-Accede al contenedor de Neo4j y abre el Cypher Shell:
+`paradigms` y `types` vienen como listas en texto, separadas por coma.
 
-```bash
-docker exec -it alex-database-neo4j cypher-shell -u neo4j -p 12345678
-```
+---
 
-Dentro del shell, ejecuta la siguiente consulta para cargar el dataset:
+## 🗑️ 2️⃣ Eliminar datos anteriores (si existen)
 
 ```cypher
-LOAD CSV WITH HEADERS FROM 'file:///Dataset-Programacion.csv' AS row
-CREATE (:Lenguaje {
-    id: row.id,
-    nombre: row.nombre,
-    popularidad: toInteger(row.popularidad),
-    velocidad: toInteger(row.velocidad),
-    paradigma: row.paradigma,
-    año_creacion: toInteger(row.año_creacion)
-});
+MATCH (n)
+DETACH DELETE n;
 ```
 
-### 4. Crear la Tabla en PostgreSQL
+---
 
-Con el backend Express corriendo, crea la tabla `etl_data` en PostgreSQL mediante el siguiente endpoint:
+## 🧱 3️⃣ Crear constraints (evita duplicados)
 
-```bash
-curl -X POST http://localhost:3000/api/create-table
+```cypher
+CREATE CONSTRAINT IF NOT EXISTS FOR (l:Lenguaje) REQUIRE l.nombre IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS FOR (p:Paradigma) REQUIRE p.nombre IS UNIQUE;
+CREATE CONSTRAINT IF NOT EXISTS FOR (t:Tipo) REQUIRE t.nombre IS UNIQUE;
 ```
 
-### 5. Ejecutar el Proceso ETL
+---
 
-Carga los datos transformados desde Neo4j hacia PostgreSQL usando el endpoint de ETL:
+## 🚀 4️⃣ Importación del dataset
 
-```bash
-curl -X POST http://localhost:3000/api/extract-and-load
+### ✅ Crear nodos Lenguaje
+
+```cypher
+LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
+MERGE (l:Lenguaje {nombre: row.name})
+SET l.anio = toInteger(row.first_release);
 ```
 
-*Nota:* Si necesitas ejecutar el proceso más de una vez, repite el comando anterior.
+---
 
-### 6. Exportar los Datos a un CSV
+### ✅ Crear nodos Paradigma y relaciones
 
-Una vez cargados los datos en PostgreSQL, descarga el archivo CSV generado con:
-
-```bash
-curl -o etl_data.csv http://localhost:3000/api/export-csv
+```cypher
+LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
+WITH row, split(row.paradigms, ',') AS paradigmas
+MATCH (l:Lenguaje {nombre: row.name})
+UNWIND paradigmas AS paradigma
+WITH l, trim(paradigma) AS p
+WHERE p <> ""
+MERGE (par:Paradigma {nombre: p})
+MERGE (l)-[:USA_PARADIGMA]->(par);
 ```
 
-El archivo `etl_data.csv` se guardará en tu directorio actual.
+---
 
-## Notas Adicionales
+### ✅ Crear nodos Tipo y relaciones
 
-- Verifica que las variables de entorno en el archivo `.env` (utilizado por Docker Compose) estén configuradas correctamente para conectar con los servicios.
-- El comando `docker-compose up --build -d` levanta todos los contenedores en segundo plano.
-- Asegúrate de que la ruta utilizada en el comando `COPY` de PostgreSQL tenga los permisos necesarios y esté correctamente mapeada en el volumen.
+```cypher
+LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
+WITH row, split(row.types, ',') AS tipos
+MATCH (l:Lenguaje {nombre: row.name})
+UNWIND tipos AS tipo
+WITH l, trim(tipo) AS t
+WHERE t <> ""
+MERGE (tip:Tipo {nombre: t})
+MERGE (l)-[:USA_TIPO]->(tip);
+```
 
+---
+
+## 🧹 5️⃣ Limpieza y normalización
+
+
+```cypher
+MATCH (n)
+WHERE n.nombre IS NOT NULL
+SET n.nombre = replace(replace(replace(replace(n.nombre, "'", ""), "\"", ""), "[", ""), "]", "");
+
+```
+---
+
+### 🔹 Eliminar nodos vacíos by accident
+
+```cypher
+MATCH (n:Paradigma)
+WHERE n.nombre IS NULL OR n.nombre = ""
+DETACH DELETE n;
+
+MATCH (n:Tipo)
+WHERE n.nombre IS NULL OR n.nombre = ""
+DETACH DELETE n;
+```
+
+---
+## 6️⃣ Consultas útiles de análisis
+
+### Lenguajes con sus paradigmas
+
+```cypher
+MATCH (l:Lenguaje)-[:USA_PARADIGMA]->(p:Paradigma)
+RETURN l.nombre, collect(p.nombre) AS paradigmas LIMIT 50;
+```
+
+### Cuántos lenguajes por paradigma
+
+```cypher
+MATCH (p:Paradigma)<-[:USA_PARADIGMA]-(l:Lenguaje)
+RETURN p.nombre AS paradigma, COUNT(l) AS cantidad
+ORDER BY cantidad DESC;
+```
+
+### Tipos más comunes
+
+```cypher
+MATCH (t:Tipo)<-[:USA_TIPO]-(l:Lenguaje)
+RETURN t.nombre AS tipo, COUNT(l) AS cantidad
+ORDER BY cantidad DESC;
+```
+
+### Tipos y paradigmas de un lenguaje
+
+```cypher
+MATCH (l:Lenguaje {nombre: "Rust"})
+OPTIONAL MATCH (l)-[:USA_PARADIGMA]->(p)
+OPTIONAL MATCH (l)-[:USA_TIPO]->(t)
+RETURN l.nombre AS lenguaje,
+       collect(DISTINCT p.nombre) AS paradigmas,
+       collect(DISTINCT t.nombre) AS tipos;
+```
+
+---
