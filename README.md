@@ -1,7 +1,7 @@
 
 ## ✅ 1️⃣ Antes de comenzar
 
-📍 Colocar el archivo `languages.tsv` en:
+Colocar el archivo `languages.tsv` en:
 
 ```
 Neo4j/import/languages.tsv
@@ -15,7 +15,7 @@ Formato: **TSV** con columnas seleccionadas:
 
 ---
 
-## 🗑️ 2️⃣ Eliminar datos anteriores (si existen)
+## Eliminar datos anteriores (si existen)
 
 ```cypher
 MATCH (n)
@@ -24,7 +24,7 @@ DETACH DELETE n;
 
 ---
 
-## 🧱 3️⃣ Crear constraints (evita duplicados)
+## Crear constraints (evita duplicados)
 
 ```cypher
 CREATE CONSTRAINT IF NOT EXISTS FOR (l:Lenguaje) REQUIRE l.nombre IS UNIQUE;
@@ -34,9 +34,9 @@ CREATE CONSTRAINT IF NOT EXISTS FOR (t:Tipo) REQUIRE t.nombre IS UNIQUE;
 
 ---
 
-## 🚀 4️⃣ Importación del dataset
+## Importación del dataset
 
-### ✅ Crear nodos Lenguaje
+### Crear nodos Lenguaje
 
 ```cypher
 LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
@@ -46,7 +46,7 @@ SET l.anio = toInteger(row.first_release);
 
 ---
 
-### ✅ Crear nodos Paradigma y relaciones
+### Crear nodos Paradigma y relaciones
 
 ```cypher
 LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
@@ -61,7 +61,7 @@ MERGE (l)-[:USA_PARADIGMA]->(par);
 
 ---
 
-### ✅ Crear nodos Tipo y relaciones
+### Crear nodos Tipo y relaciones
 
 ```cypher
 LOAD CSV WITH HEADERS FROM 'file:///languages.tsv' AS row FIELDTERMINATOR '\t'
@@ -76,7 +76,7 @@ MERGE (l)-[:USA_TIPO]->(tip);
 
 ---
 
-## 🧹 5️⃣ Limpieza y normalización
+## Limpieza y normalización
 
 
 ```cypher
@@ -87,7 +87,7 @@ SET n.nombre = replace(replace(replace(replace(n.nombre, "'", ""), "\"", ""), "[
 ```
 ---
 
-### 🔹 Eliminar nodos vacíos by accident
+### Eliminar nodos vacíos by accident
 
 ```cypher
 MATCH (n:Paradigma)
@@ -100,7 +100,7 @@ DETACH DELETE n;
 ```
 
 ---
-## 6️⃣ Consultas útiles de análisis
+## Consultas útiles de análisis
 
 ### Lenguajes con sus paradigmas
 

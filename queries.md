@@ -16,4 +16,6 @@
 | **COUNT()**                    | Cuenta elementos retornados                                         | `RETURN COUNT(l)`                                      |
 | **DISTINCT**                   | Elimina duplicados en resultados                                    | `RETURN DISTINCT t.nombre`                             |
 | **REMOVE**                     | Borra una propiedad o etiqueta                                      | `REMOVE l.anio`                                        |
-| **CALL {}** *(procedimientos)* | Ejecuta funciones y plugins de Neo4j                                | `CALL db.schema.visualization()`                       |
+|**CALL {}** *(procedimientos)* | Ejecuta funciones y plugins de Neo4j                                | `CALL db.schema.visualization()`                       |
+
+
